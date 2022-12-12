@@ -166,17 +166,12 @@ mycursor = db.cursor()
 mycursor.execute("SELECT * FROM students")
 
 list = []
-for x in mycursor:
-    list.append(x)
 index = ['ID', 'First', 'Last', 'Year', 'Address', 'Grade']
 df = pd.DataFrame(columns=index)
+for x in mycursor:
+    #list.append(x)
+    df.loc[len(df)] = x
 
-for row in list:
-    df.loc[len(df)] = row
-print(df)
-
-
-#print(text)
 gui.msgbox(df)
 
 # orderStudents()
