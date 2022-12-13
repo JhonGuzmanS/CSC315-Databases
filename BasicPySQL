@@ -24,82 +24,93 @@ def getUser():
 def print_cursor(mycursor):
     index = ['ID', 'First', 'Last', 'Year', 'Address', 'Grade']
     df = pd.DataFrame(columns=index)
-
     for x in mycursor:
         df.loc[len(df)] = x
     gui.msgbox(df)
 
 
 def findStudent():
-    choice = input("Are you finding by (I)D or (N)ame? ")
-    if choice == 'I':
-        id = input("Enter in the sid: ")
+    title = "Find Student"
+    selectname = "SELECT * FROM students WHERE sfirst = %s AND slast = %s;"
+    choice = gui.choicebox("Choose how to find Student:", title, choices=["ID", "Name"])
+    if choice == "ID":
+        id = gui.enterbox("Enter in the ID of the student", title)
+        selectid = "SELECT * FROM students WHERE sid = {id};".format(id=id)
         try:
-            mycursor = db.cursor()
-            mycursor.execute("SELECT * FROM students where sid = %s" % id)
+            mycursor.execute(selectid)
             print_cursor(mycursor)
+            menu()
         except:
-            print("There is no student with that ID")
-    elif choice == 'N':
-        name = input("Enter in first then last name: ")
-        name = name.split()
+            gui.msgbox("Invalid information.", title, "Continue")
+            findStudent()
+    elif choice == "Name":
+        fieldName = ["First Name", "Last Name"]
+        name = gui.multenterbox("Enter in the correct information", title, fieldName)
         try:
-            mycursor = db.cursor()
-            mycursor.execute("SELECT * FROM students where sfirst = '%s' and slast = '%s'" % (name[0], name[1]))
+            mycursor.execute(selectname, name)
             print_cursor(mycursor)
+            menu()
         except:
-            print("There is no student with that name")
-    else:
-        print("Enter in the correct choice.")
-        findStudent()
+            gui.msgbox("Invalid information.", title, "Continue")
+            findStudent()
 
 
 def orderStudents():
-    choice = input("Order by (N)ame? (Y)ear? or (I)D? ")
-    order = input("(A)scending or (D)escending? ")
-    if order == 'A':
+    title = "Order Students"
+    choice = gui.choicebox("Which category do you want to order by?", title, choices=["Name", "Year", "ID", "Grade"])
+    order = gui.choicebox("Ascending order or Descending order?", title, choices=["Ascend", "Descend"])
+    if order == 'Ascend':
         order = 'ASC'
-    elif order == 'D':
+    elif order == 'Descend':
         order = 'DESC'
-    else:
-        print("Not the correct input")
-        orderStudents()
 
-    if choice == 'N':
-        choice = input("Order by (F)irst name or (L)ast name? ")
-        if choice == 'F':
+    if choice == 'Name':
+        choice = gui.choicebox("Order by first or last name?", title, choices=["First", "Last"])
+        if choice == 'First':
             try:
                 mycursor = db.cursor()
                 mycursor.execute("SELECT * FROM students order by sfirst %s" % order)
                 print_cursor(mycursor)
+                menu()
             except:
-                print("Error categorizing students by name")
-        if choice == 'L':
+                gui.msgbox("Invalid information.", title, "Continue")
+                orderStudents()
+        if choice == 'Last':
             try:
                 mycursor = db.cursor()
                 mycursor.execute("SELECT * FROM students order by slast %s" % order)
                 print_cursor(mycursor)
+                menu()
             except:
-                print("Error categorizing students by name")
-        else:
-            print("Error, input not recognized. Restarting...")
-    elif choice == 'Y':
+                gui.msgbox("Invalid information.", title, "Continue")
+                orderStudents()
+    elif choice == 'Year':
         try:
             mycursor = db.cursor()
             mycursor.execute("SELECT * FROM students order by syear %s" % order)
             print_cursor(mycursor)
+            menu()
         except:
-            print("Error categorizing students by year")
-    elif choice == 'I':
+            gui.msgbox("Invalid information.", title, "Continue")
+            orderStudents()
+    elif choice == 'ID':
         try:
             mycursor = db.cursor()
             mycursor.execute("SELECT * FROM students order by sid %s" % order)
             print_cursor(mycursor)
+            menu()
         except:
-            print("Error categorizing students by id")
-    else:
-        print("Not the correct input")
-        orderStudents()
+            gui.msgbox("Invalid information.", title, "Continue")
+            orderStudents()
+    elif choice == 'Grade':
+        try:
+            mycursor = db.cursor()
+            mycursor.execute("SELECT * FROM students order by sgrade %s" % order)
+            print_cursor(mycursor)
+            menu()
+        except:
+            gui.msgbox("Invalid information.", title, "Continue")
+            orderStudents()
 
 
 def groupStudents():
@@ -117,57 +128,67 @@ def groupStudents():
                 select = select + "syear = %s or "
         select = select + "syear = %s) "
         values = grade + year
-        print(values)
+        print(type(values[0]))
         try:
             mycursor.execute(select, values)
             print_cursor(mycursor)
+            menu()
         except:
-            output = gui.msgbox("Invalid information.", title, "Continue")
+            gui.msgbox("Invalid information.", title, "Continue")
             groupStudents()
 
 
 def insertStudent():
-    insert = "INSERT INTO students (sfirst, slast, syear, saddress, sgrade) VALUES (%s, %s, %s, %s, %s)"
+    insert = "INSERT INTO students (sfirst, slast, syear, saddress, sgrade) VALUES (%s, %s, %s, %s, %s);"
     msg = "Enter in Student Info"
     title = "Student Information"
     fieldName = ["First Name", "Last Name", "Year", "Address", "Current Grade"]
     info = gui.multenterbox(msg, title, fieldName)
-    print(info)
-    if info[0] == "" or info[1] == "" or info[2] == "" or info[4] == "":
-        output = gui.msgbox("Information missing.", title, "Continue")
+    if info[0] == "" or info[1] == "" or info[2] == "" or info[3] == "" or info[4] == "":
+        gui.msgbox("Information missing.", title, "Continue")
         insertStudent()
     else:
         try:
             mycursor.execute(insert, info)
             db.commit()
+            gui.msgbox("Successfully added student.")
+            menu()
         except:
-            output = gui.msgbox("Invalid information.", title, "Continue")
+            gui.msgbox("Invalid information.", title, "Continue")
             insertStudent()
 
 
-def main():
-    user, passwd = getUser()
+def menu():
+    title = "Main Menu"
+    choices = ["Order Students", "Find a Student", "Add a Student", "Group Students", "Exit"]
+    choice = gui.choicebox("Welcome [REDACTED], what would you like to do?", title, choices=choices)
+    if choice == choices[0]:
+        orderStudents()
+    elif choice == choices[1]:
+        findStudent()
+    elif choice == choices[2]:
+        insertStudent()
+    elif choice == choices[3]:
+        groupStudents()
+    elif choice == choices[4]:
+        gui.msgbox("Exiting Now...")
 
-    try:
-        db = login(user, passwd, "studentinfo")
-        mycursor = db.cursor()
-        # mycursor.execute("SELECT * FROM students")
-    except:
-        print("There was an error, restart the program...")
 
-
-# start of main
+# start of program
+is_connect = False
 db = mysql.connector.connect()
+while not is_connect:
+    value = gui.multenterbox("Enter in your information", "Login", fields=["User", "Password"])
+    if value is None:
+        quit()
+    try:
+        db = login(value[0], value[1], db="studentinfo")
+        is_connect = True
+    except:
+        gui.msgbox("Incorrect user/password.")
 
-# user, password = getUser()
-# db = login("root", "Math@2468", "studentinfo")
+if is_connect:
+    mycursor = db.cursor()
+    menu()
 
-db = login("root", "Math@2468", db="studentinfo")
-mycursor = db.cursor()
-#mycursor.execute("SELECT * FROM students")
-
-# orderStudents()
-# findStudent()
-groupStudents()
-#insertStudent()
 db.close()
