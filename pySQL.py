@@ -1,5 +1,6 @@
 import mysql.connector
 import easygui as gui
+import pandas as pd
 
 
 def login(user, passwd=None, db=None):
@@ -21,32 +22,37 @@ def getUser():
 
 
 def print_cursor(mycursor):
+    index = ['ID', 'First', 'Last', 'Year', 'Address', 'Grade']
+    df = pd.DataFrame(columns=index)
+
     for x in mycursor:
-        print(x)
+        df.loc[len(df)] = x
+    gui.msgbox(df)
 
 
 def findStudent():
-    choice = input("Are you finding by (I)D or (N)ame? ")
-    if choice == 'I':
-        id = input("Enter in the sid: ")
+    title = "Find Student"
+    selectid = "SELECT * FROM students where sid = %s"
+    selectname = "SELECT * FROM students where sfirst = '%s' and slast = '%s'"
+    test = "select * from students where sfirst = 'Joe'"
+    choice = gui.choicebox("Choose how to find Student:", title, choices=["ID", "Name"])
+    if choice == "ID":
+        id = gui.enterbox("Enter in the ID of the student", title)
         try:
-            mycursor = db.cursor()
-            mycursor.execute("SELECT * FROM students where sid = %s" % id)
+            mycursor.execute(selectid, id)
             print_cursor(mycursor)
         except:
-            print("There is no student with that ID")
-    elif choice == 'N':
-        name = input("Enter in first then last name: ")
-        name = name.split()
+            output = gui.msgbox("Invalid information.", title, "Continue")
+            findStudent()
+    elif choice == "Name":
+        name = gui.multenterbox("Enter in the correct information", title, fields=("First", "Last"))
+        value = name
         try:
-            mycursor = db.cursor()
-            mycursor.execute("SELECT * FROM students where sfirst = '%s' and slast = '%s'" % (name[0], name[1]))
+            mycursor.execute(selectname, value)
             print_cursor(mycursor)
         except:
-            print("There is no student with that name")
-    else:
-        print("Enter in the correct choice.")
-        findStudent()
+            output = gui.msgbox("Invalid information.", title, "Continue")
+            findStudent()
 
 
 def orderStudents():
@@ -98,29 +104,45 @@ def orderStudents():
 
 
 def groupStudents():
-    print("Available columns that you are able to group by: \n1.Year \n2.Grade")
-    choice = input("Enter in the number(s) you wish to group by(leave a space in between options): ")
-    choice = int(choice.split())
+    title = "Group Students"
+    select = "select * from students where sgrade between %s and %s and ("
+    grouplist = ("Year", "Grade")
+    choices = gui.multchoicebox("Choose all that apply:", title, choices=grouplist)
+    if len(choices) == len(grouplist):
+        year = gui.multchoicebox("Choose all that apply:", "Group Students", choices=('FRES', 'SOPH', 'JUN', 'SEN'))
+        grade = gui.enterbox("Enter in a range for Grade. Ex: 0,100", title)
+        grade = grade.split(',')
+        num = len(year)
+        if num != 0:
+            for i in range(num - 1):
+                select = select + "syear = %s or "
+        select = select + "syear = %s) "
+        values = grade + year
+        try:
+            mycursor.execute(select, values)
+            print_cursor(mycursor)
+        except:
+            output = gui.msgbox("Invalid information.", title, "Continue")
+            groupStudents()
 
-    options = [1, 2]
-    isYear = False
-    isGrade = False
-    if len(choice) > 1:
-        for num in choice:
-            if num == 1:
-                isYear = True
-            elif num == 2:
-                isGrade = True
 
-        if isYear:
-            year = input("Select all that apply: ")
-            year = year.split()
-            
+def insertStudent():
+    insert = "INSERT INTO students (sfirst, slast, syear, saddress, sgrade) VALUES (%s, %s, %s, %s, %s)"
+    msg = "Enter in Student Info"
+    title = "Student Information"
+    fieldName = ["First Name", "Last Name", "Year", "Address", "Current Grade"]
+    info = gui.multenterbox(msg, title, fieldName)
+    print(info)
+    if info[0] == "" or info[1] == "" or info[2] == "" or info[4] == "":
+        output = gui.msgbox("Information missing.", title, "Continue")
+        insertStudent()
     else:
-        if choice == 1:
-            isYear = True
-        elif choice == 2:
-            isGrade = True
+        try:
+            mycursor.execute(insert, info)
+            db.commit()
+        except:
+            output = gui.msgbox("Invalid information.", title, "Continue")
+            insertStudent()
 
 
 def main():
@@ -131,24 +153,22 @@ def main():
         mycursor = db.cursor()
         # mycursor.execute("SELECT * FROM students")
     except:
-        print("There was an error, restart the program...")
+        print("There was an error, closing the program...")
 
 
 # start of main
 db = mysql.connector.connect()
 
-#user, password = getUser()
+# user, password = getUser()
+# db = login("root", "Math@2468", "studentinfo")
 
-#db = login("root", "Math@2468", "studentinfo")
-db = login("John", db="studentinfo")
+db = login("root", "Math@2468", db="studentinfo")
 mycursor = db.cursor()
 mycursor.execute("SELECT * FROM students")
-for x in mycursor:
-    print(x)
+print_cursor(mycursor)
 
-#orderStudents()
-#findStudent()
-#groupStudents()
-
-# mycursor.execute("INSERT INTO table (variables) VALUES (%s, %s)", (actual values))
-# mycursor.execute("SELECT * FROM table")
+# orderStudents()
+findStudent()
+# groupStudents()
+#insertStudent()
+db.close()
