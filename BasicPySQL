@@ -22,8 +22,12 @@ def getUser():
 
 
 def print_cursor(mycursor):
+    index = ['ID', 'First', 'Last', 'Year', 'Address', 'Grade']
+    df = pd.DataFrame(columns=index)
+
     for x in mycursor:
-        print(x)
+        df.loc[len(df)] = x
+    gui.msgbox(df)
 
 
 def findStudent():
@@ -99,49 +103,46 @@ def orderStudents():
 
 
 def groupStudents():
-    print("Available columns that you are able to group by: \n1.Year \n2.Grade")
-    choice = input("Enter in the number(s) you wish to group by(leave a space in between options): ")
-    choice = int(choice.split())
-
-    options = [1, 2]
-    isYear = False
-    isGrade = False
-    if len(choice) > 1:
-        for num in choice:
-            if num == 1:
-                isYear = True
-            elif num == 2:
-                isGrade = True
-
-        if isYear:
-            year = input("Select all that apply: ")
-            year = year.split()
-
-    else:
-        if choice == 1:
-            isYear = True
-        elif choice == 2:
-            isGrade = True
+    title = "Group Students"
+    select = "select * from students where sgrade between %s and %s and ("
+    grouplist = ("Year", "Grade")
+    choices = gui.multchoicebox("Choose all that apply:", title, choices=grouplist)
+    if len(choices) == len(grouplist):
+        year = gui.multchoicebox("Choose all that apply:", "Group Students", choices=('FRES', 'SOPH', 'JUN', 'SEN'))
+        grade = gui.enterbox("Enter in a range for Grade. Ex: 0,100", title)
+        grade = grade.split(',')
+        num = len(year)
+        if num != 0:
+            for i in range(num - 1):
+                select = select + "syear = %s or "
+        select = select + "syear = %s) "
+        values = grade + year
+        print(values)
+        try:
+            mycursor.execute(select, values)
+            print_cursor(mycursor)
+        except:
+            output = gui.msgbox("Invalid information.", title, "Continue")
+            groupStudents()
 
 
 def insertStudent():
-  insert = "INSERT INTO students (sfirst, slast, syear, saddress, sgrade) VALUES (%s, %s, %s, %s, %s)"
-
-  msg = "Enter in Student Info"
-  title = "Student Information"
-  fieldName = ["First Name", "Last Name", "Year", "Address", "Current Grade"]
-  info = gui.multenterbox(msg, title, fieldName)
-
-  if info[0] == "" or info[1] == "" or info[2] == "" or info[4] == "":
-    output = gui.msgbox("Information missing.", title, "Continue")
-    insertStudent()
-  else:
-    try:
-      mycursor.execute(insert, info)
-      db.commit()
-    except:
-      output = gui.msgbox("Invalid information.", title, "Continue")
-      insertStudent()
+    insert = "INSERT INTO students (sfirst, slast, syear, saddress, sgrade) VALUES (%s, %s, %s, %s, %s)"
+    msg = "Enter in Student Info"
+    title = "Student Information"
+    fieldName = ["First Name", "Last Name", "Year", "Address", "Current Grade"]
+    info = gui.multenterbox(msg, title, fieldName)
+    print(info)
+    if info[0] == "" or info[1] == "" or info[2] == "" or info[4] == "":
+        output = gui.msgbox("Information missing.", title, "Continue")
+        insertStudent()
+    else:
+        try:
+            mycursor.execute(insert, info)
+            db.commit()
+        except:
+            output = gui.msgbox("Invalid information.", title, "Continue")
+            insertStudent()
 
 
 def main():
@@ -159,26 +160,14 @@ def main():
 db = mysql.connector.connect()
 
 # user, password = getUser()
-
 # db = login("root", "Math@2468", "studentinfo")
+
 db = login("root", "Math@2468", db="studentinfo")
 mycursor = db.cursor()
-mycursor.execute("SELECT * FROM students")
-
-list = []
-index = ['ID', 'First', 'Last', 'Year', 'Address', 'Grade']
-df = pd.DataFrame(columns=index)
-for x in mycursor:
-    #list.append(x)
-    df.loc[len(df)] = x
-
-gui.msgbox(df)
+#mycursor.execute("SELECT * FROM students")
 
 # orderStudents()
 # findStudent()
-# groupStudents()
-# insertStudent()
-
-
-# mycursor.execute("INSERT INTO table (variables) VALUES (%s, %s)", (actual values))
-# mycursor.execute("SELECT * FROM table")
+groupStudents()
+#insertStudent()
+db.close()
