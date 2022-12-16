@@ -35,14 +35,17 @@ def findStudent():
     choice = gui.choicebox("Choose how to find Student:", title, choices=["ID", "Name"])
     if choice == "ID":
         id = gui.enterbox("Enter in the ID of the student", title)
-        selectid = "SELECT * FROM students WHERE sid = {id};".format(id=id)
-        try:
-            mycursor.execute(selectid)
-            print_cursor(mycursor)
-            menu()
-        except:
+        if type(int(id)) != int:
             gui.msgbox("Invalid information.", title, "Continue")
             findStudent()
+        else:
+            try:
+                mycursor.execute("SELECT * FROM students WHERE sid = %(value)s", {'value': id})
+                print_cursor(mycursor)
+                menu()
+            except:
+                gui.msgbox("Invalid information.", title, "Continue")
+                findStudent()
     elif choice == "Name":
         fieldName = ["First Name", "Last Name"]
         name = gui.multenterbox("Enter in the correct information", title, fieldName)
@@ -116,21 +119,49 @@ def orderStudents():
 def groupStudents():
     title = "Group Students"
     select = "select * from students where sgrade between %s and %s and ("
+    select_year = "select * from students where "
+    select_grade = "select * from students where sgrade between %s and %s"
     grouplist = ("Year", "Grade")
     choices = gui.multchoicebox("Choose all that apply:", title, choices=grouplist)
     if len(choices) == len(grouplist):
         year = gui.multchoicebox("Choose all that apply:", "Group Students", choices=('FRES', 'SOPH', 'JUN', 'SEN'))
         grade = gui.enterbox("Enter in a range for Grade. Ex: 0,100", title)
         grade = grade.split(',')
-        num = len(year)
+        num = len(year) - 1
         if num != 0:
-            for i in range(num - 1):
+            for i in range(num):
                 select = select + "syear = %s or "
         select = select + "syear = %s) "
         values = grade + year
-        print(type(values[0]))
         try:
             mycursor.execute(select, values)
+            print_cursor(mycursor)
+            menu()
+        except:
+            gui.msgbox("Invalid information.", title, "Continue")
+            groupStudents()
+
+    elif choices[0] == 'Year':
+        year = gui.multchoicebox("Choose all that apply:", "Group Students", choices=('FRES', 'SOPH', 'JUN', 'SEN'))
+        num = len(year) - 1
+        print(num)
+        if num != 0:
+            for i in range(num):
+                select_year = select_year + "syear = %s or "
+        select_year = select_year + "syear = %s "
+        try:
+            mycursor.execute(select_year, year)
+            print_cursor(mycursor)
+            menu()
+        except:
+            gui.msgbox("Invalid information.", title, "Continue")
+            groupStudents()
+
+    elif choices[0] == 'Grade':
+        grade = gui.enterbox("Enter in a range for Grade. Ex: 0,100", title)
+        grade = grade.split(',')
+        try:
+            mycursor.execute(select_grade, grade)
             print_cursor(mycursor)
             menu()
         except:
