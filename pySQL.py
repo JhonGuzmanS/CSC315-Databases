@@ -29,7 +29,7 @@ def print_cursor(mycursor):
         df.loc[len(df)] = x
     gui.msgbox(df)
 
-
+# Finds an individual student by searching based on his name or student ID
 def findStudent():
     title = "Find Student"
     selectid = "SELECT * FROM students where sid = %s"
@@ -54,7 +54,7 @@ def findStudent():
             output = gui.msgbox("Invalid information.", title, "Continue")
             findStudent()
 
-
+# Shows all students in a specific order(by name or year or ID number)
 def orderStudents():
     choice = input("Order by (N)ame? (Y)ear? or (I)D? ")
     order = input("(A)scending or (D)escending? ")
@@ -102,7 +102,7 @@ def orderStudents():
         print("Not the correct input")
         orderStudents()
 
-
+# shows students that meet the requirement of the users. Whether they're a Freshman, Junior, or if they have a certain grade
 def groupStudents():
     title = "Group Students"
     select = "select * from students where sgrade between %s and %s and ("
@@ -125,7 +125,7 @@ def groupStudents():
             output = gui.msgbox("Invalid information.", title, "Continue")
             groupStudents()
 
-
+# adds a new Student into the database
 def insertStudent():
     insert = "INSERT INTO students (sfirst, slast, syear, saddress, sgrade) VALUES (%s, %s, %s, %s, %s)"
     msg = "Enter in Student Info"
