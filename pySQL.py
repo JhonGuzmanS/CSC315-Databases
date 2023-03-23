@@ -2,7 +2,7 @@ import mysql.connector
 import easygui as gui
 import pandas as pd
 
-
+# host must be local host, user and password found in User.sql
 def login(user, passwd=None, db=None):
     database = mysql.connector.connect(
         host="localhost",
